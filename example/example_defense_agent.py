@@ -14,7 +14,7 @@ def main():
   # feature set. See feature sets in hfo.py/hfo.hpp.
   hfo.connectToServer(LOW_LEVEL_FEATURE_SET,
                       'bin/teams/base/config/formations-dt', 6000,
-                      'localhost', 'base_right', True)
+                      'localhost', 'base_right', False)
   for episode in itertools.count():
     status = IN_GAME
     while status == IN_GAME:
