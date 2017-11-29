@@ -33,8 +33,11 @@ TEAMMATES = 1
 OPPONENTS = 2
 
 EPSILON = 0.05
-ALPHA = 0.1
+ALPHA = 0.2
 GAMMA = 0.9
+
+TRAIN = False
+RANDOM = False
 
 # Gets tile in range 0-99 from (x,y) position
 def getTile(x, y):
@@ -75,11 +78,14 @@ def main():
   # for i in range(STATES*ACTIONS):
   #   qvals[i] = random.random()
 
-  qvals = [[[0 for k in range(ACTIONS)] for j in range(100)] for i in range(100)]
-  for i in range(100):
-    for j in range(100):
-      for k in range(ACTIONS):
-        qvals[i][j][k] = random.random()
+  if TRAIN:
+    qvals = [[[0 for k in range(ACTIONS)] for j in range(100)] for i in range(100)]
+    for i in range(100):
+      for j in range(100):
+        for k in range(ACTIONS):
+          qvals[i][j][k] = random.random()
+  else:
+    qvals = np.load('q.npy').tolist()
 
   episode_num = 0
   for episode in itertools.count():
@@ -89,15 +95,17 @@ def main():
    # state = hfo.getState()
 
     state = hfo.getState()
-    print(len(state))
     robot_tile = getTile(state[0], state[1])
     ball_tile = getTile(state[3], state[4])
 
     while status == IN_GAME:
 
-      # Pick new action, a', to take with epsilon-greedy strategy
-      a = qvals[robot_tile][ball_tile].index(max(qvals[robot_tile][ball_tile]))
-      if random.random() < EPSILON:
+      if not RANDOM:
+        # Pick new action, a', to take with epsilon-greedy strategy
+        a = qvals[robot_tile][ball_tile].index(max(qvals[robot_tile][ball_tile]))
+        if random.random() < EPSILON:
+          a = random.randint(0, ACTIONS-1)
+      else:
         a = random.randint(0, ACTIONS-1)
 
       if a == 0:
@@ -123,15 +131,16 @@ def main():
       #TODO: get the reward!
       r = 0
       if status == GOAL:
-        r = -5
+        r = -7.5
       elif status == CAPTURED_BY_DEFENSE or status == OUT_OF_BOUNDS:
         r = 10
-      elif oppHasBall(state):
-        r = -1
+      #elif oppHasBall(state):
+      #  r = -1
       else:
         r = 0
 
-      qvals[robot_tile][ball_tile][a] += ALPHA*(r + (GAMMA*max(qvals[next_robot_tile][next_ball_tile])) - qvals[robot_tile][ball_tile][a])
+      if TRAIN:
+        qvals[robot_tile][ball_tile][a] += ALPHA*(r + (GAMMA*max(qvals[next_robot_tile][next_ball_tile])) - qvals[robot_tile][ball_tile][a])
 
       robot_tile = next_robot_tile
       ball_tile = next_ball_tile
@@ -158,9 +167,10 @@ def main():
     # Check the outcome of the episode
     print(('Episode %d ended with %s'%(episode, hfo.statusToString(status))))
     # Quit if the server goes down
-    if episode_num % 5 == 0:
-      q = np.array(qvals)
-      np.save('q.npy', q)
+    if TRAIN:
+      if episode_num % 5 == 0:
+        q = np.array(qvals)
+        np.save('q.npy', q)
 
     if status == SERVER_DOWN:
       hfo.act(QUIT)
