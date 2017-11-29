@@ -31,6 +31,10 @@ ACTIONS = 4
 TEAMMATES = 2
 OPPONENTS = 2
 
+EPSILON = 0.05
+APLHA = 0.25
+GAMMA = 0.9
+
 # Gets tile in range 0-99 from (x,y) position
 def getTile(x, y):
   x = math.floor(10*(x+1))
@@ -64,38 +68,80 @@ def main():
                       'localhost', 'base_right', False)
   
   # create qval array with random vals: [0,1)
-  qvals = [0]*(STATES*ACTIONS)
-  for i in range(STATES*ACTIONS):
-    qvals[i] = random.random()
+  # qvals = [0]*(STATES*ACTIONS)
+  # for i in range(STATES*ACTIONS):
+  #   qvals[i] = random.random()
+
+  qvals = [[[0 for k in range(ACTIONS)] for j in range(100)] for i in range(100)]
+  for i in range(100):
+    for j in range(100):
+      for k in range(ACTIONS):
+        qvals[i][j][k] = random.random()
 
 
 
   for episode in itertools.count():
     status = IN_GAME
+
+   # state = hfo.getState()
+
+    state = hfo.getState()
+    robot_tile = getTile(state[0], state[1])
+    ball_tile = getTile(state[3], state[4])
+
     while status == IN_GAME:
 
+      # Pick new action, a', to take with epsilon-greedy strategy
+      a = qvals[robot_tile][ball_tile].index(max(qvals[robot_tile][ball_tile]))
+      if random.random() < EPSILON:
+        a = random.randint(0, ACTIONS-1)
+
+      if a == 0:
+        hfo.act(INTERCEPT)
+      elif a == 1:
+        hfo.act(REDUCE_ANGLE_TO_GOAL)
+      elif a == 2:
+        hfo.act(DEFEND_GOAL)
+      else:
+        hfo.act(GO_TO_BALL)
+
+      # Advance the environment and get the game status
       status = hfo.step()
-      
+
       # Grab the state features from the environment
       state = hfo.getState()
+      next_robot_tile = getTile(state[0], state[1])
+      next_ball_tile = getTile(state[3], state[4])
 
-      # robot (x,y) = (state[0], state[1])
-      # ball (x,y) = (state[3], state[4])
-      robot_tile = getTile(state[0], state[1])
-      ball_tile = getTile(state[3], state[4])
+      # Get reward, update Q-val
 
-      # update previous Q-val
+      #TODO: get the reward!
+      r = 0
+      if status == GOAL:
+        r = -20
+      elif status == CAPTURED_BY_DEFENSE or status == OUT_OF_BOUNDS:
+        r = 15
+      elif oppHasBall(state):
+        r = -5
+      else:
+        r = 0
+
+      qvals[robot_tile][ball_tile][a] +=
+        ALPHA*(r + GAMMA*max(qvals[next_robot_tile][next_ball_tile]) - qvals[robot_tile][ball_tile])
+
+      robot_tile = next_robot_tile
+      ball_tile = next_ball_tile
+
 
       # reward: -5 if enemy has ball, -20 if goal, +15 OOB, CAPTURED_BY_DEFENSE
 
-      # pick new action, a', to take with epsilon-greedy strategy
 
 
 
-      if state[3] < 0: #the ball is "near" the goal
-        hfo.act(INTERCEPT)
-      else:
-        hfo.act(REDUCE_ANGLE_TO_GOAL)
+      # if state[3] < 0: #the ball is "near" the goal
+      #   hfo.act(INTERCEPT)
+      # else:
+      #   hfo.act(REDUCE_ANGLE_TO_GOAL)
 
       # Take an action and get the current game status
       #hfo.act(DASH, 20.0, 0.)
