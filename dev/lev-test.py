@@ -71,10 +71,10 @@ def getGoalieTile(y):
 
 # returns if an opponent is in same tile as ball (they probably have the ball)
 def oppHasBall(state):
-  ball_tile = getTile(state[3], state[4])
+  ball_tile = getTile(-state[3], state[4])
   for o in range(OPPONENTS):
     o_x,o_y = (state[9+6*TEAMMATES+(3*o)],  state[9+6*TEAMMATES+(3*o)+1])
-    opp_tile = getTile(o_x, o_y)
+    opp_tile = getTile(-o_x, o_y)
     if ball_tile == opp_tile:
       return True
   return False
@@ -112,8 +112,8 @@ def main():
     # state = hfo.getState()
     # TODO add goalie location too?
     state = hfo.getState()
-    robot_tile = getTile(state[0], state[1])
-    ball_tile = getTile(state[3], state[4])
+    robot_tile = getTile(-state[0], state[1])
+    ball_tile = getTile(-state[3], state[4])
     goalie_tile = getGoalieTile(state[9+3*TEAMMATES+1])
 
     while status == IN_GAME:
@@ -145,8 +145,8 @@ def main():
       # Grab the state features from the environment
       state = hfo.getState()
       #print(len(state)) 23?!
-      next_robot_tile = getTile(state[0], state[1])
-      next_ball_tile = getTile(state[3], state[4])
+      next_robot_tile = getTile(-state[0], state[1])
+      next_ball_tile = getTile(-state[3], state[4])
       next_goalie_tile = getGoalieTile(state[10+3*TEAMMATES+1])
 
       # Get reward, update Q-val
