@@ -32,8 +32,8 @@ ACTIONS = 2
 TEAMMATES = 1
 OPPONENTS = 2
 
-EPSILON = 0 #0.05 #0.05 #0.05 #0.025
-ALPHA = 0.125
+EPSILON = 0 #0.05 #0.05 #0.05 #0.05 #0.025
+ALPHA = 0.25
 GAMMA = 0.95
 
 TRAIN = False
@@ -121,7 +121,9 @@ def main():
 
       if not RANDOM:
         # Pick new action, a', to take with epsilon-greedy strategy
+        #print(qvals[goalie_tile][robot_tile][ball_tile])
         a = qvals[goalie_tile][robot_tile][ball_tile].index(max(qvals[goalie_tile][robot_tile][ball_tile]))
+        
         if random.random() < EPSILON:
           a = random.randint(0, ACTIONS-1)
       else:
@@ -148,16 +150,14 @@ def main():
       r = 0
       if status == GOAL:
         r = -10
-      elif status == CAPTURED_BY_DEFENSE or status == OUT_OF_BOUNDS:
+      if status == CAPTURED_BY_DEFENSE or status == OUT_OF_BOUNDS:
         r = 10
-      #elif oppHasBall(state):
-      #  r = -1
-      else:
-        r = 0
 
       if TRAIN:
         qvals[goalie_tile][robot_tile][ball_tile][a] += ALPHA*(r + (GAMMA*max(qvals[next_goalie_tile][next_robot_tile][next_ball_tile])) - qvals[goalie_tile][robot_tile][ball_tile][a])
-      
+        
+
+
       robot_tile = next_robot_tile
       ball_tile = next_ball_tile
       goalie_tile = next_goalie_tile
