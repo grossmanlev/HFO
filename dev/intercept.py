@@ -27,17 +27,17 @@ import math
 import numpy as np
 
 STATES = 6*100*100
-ACTIONS = 6
+ACTIONS = 2
 
 TEAMMATES = 1
 OPPONENTS = 2
 
-EPSILON = 0 #0.025
+EPSILON = 0 #0.05 #0.05 #0.05 #0.025
 ALPHA = 0.125
-GAMMA = 0.99
+GAMMA = 0.95
 
 TRAIN = False
-RANDOM = True
+RANDOM = False
 
 # Gets tile in range 0-99 from (x,y) position
 def getTile(x, y):
@@ -112,11 +112,12 @@ def main():
     # state = hfo.getState()
     # TODO add goalie location too?
     state = hfo.getState()
-    robot_tile = getTile(state[0], state[1])
-    ball_tile = getTile(state[3], state[4])
+    robot_tile = getTile(-state[0], state[1])
+    ball_tile = getTile(-state[3], state[4])
     goalie_tile = getGoalieTile(state[9+3*TEAMMATES+1])
 
     while status == IN_GAME:
+      #print(state[3])
 
       if not RANDOM:
         # Pick new action, a', to take with epsilon-greedy strategy
@@ -128,16 +129,8 @@ def main():
 
       if a == 0:
         hfo.act(INTERCEPT)
-      elif a == 1:
-        hfo.act(REDUCE_ANGLE_TO_GOAL)
-      elif a == 2:
-        hfo.act(DEFEND_GOAL)
-      elif a == 3:
-        hfo.act(NOOP)
-      elif a == 4:
-        hfo.act(MOVE)
       else:
-        hfo.act(GO_TO_BALL)
+        hfo.act(NOOP)
 
       # Advance the environment and get the game status
       status = hfo.step()
@@ -145,8 +138,8 @@ def main():
       # Grab the state features from the environment
       state = hfo.getState()
       #print(len(state)) 23?!
-      next_robot_tile = getTile(state[0], state[1])
-      next_ball_tile = getTile(state[3], state[4])
+      next_robot_tile = getTile(-state[0], state[1])
+      next_ball_tile = getTile(-state[3], state[4])
       next_goalie_tile = getGoalieTile(state[10+3*TEAMMATES+1])
 
       # Get reward, update Q-val
@@ -154,9 +147,9 @@ def main():
       #TODO: get the reward!
       r = 0
       if status == GOAL:
-        r = -1
+        r = -10
       elif status == CAPTURED_BY_DEFENSE or status == OUT_OF_BOUNDS:
-        r = 1
+        r = 10
       #elif oppHasBall(state):
       #  r = -1
       else:
