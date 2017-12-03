@@ -27,16 +27,16 @@ import math
 import numpy as np
 
 STATES = 6*100*100
-ACTIONS = 2
+ACTIONS = 4
 
 TEAMMATES = 1
 OPPONENTS = 2
 
-EPSILON = 0 #0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.025
+EPSILON = 0.05 #0.05 #0.05 #0.05 #0.05 #0.025
 ALPHA = 0.25
-GAMMA = 0.95
+GAMMA = 0.90
 
-TRAIN = False
+TRAIN = True
 RANDOM = False
 
 # Gets tile in range 0-99 from (x,y) position
@@ -53,8 +53,6 @@ def getTile(x, y):
   #print(10*y+x)
 
   #print(10*y + x)
-  if 10*y + x == 99:
-    print("99!")
   return 10*y + x
 
 # Gets tile in range 0-5 from y position of goalie
@@ -133,8 +131,14 @@ def main():
 
       if a == 0:
         hfo.act(INTERCEPT)
+      elif a == 1:
+        hfo.act(GO_TO_BALL)
+      elif a == 2:
+        hfo.act (DEFEND_GOAL)
       else:
-        hfo.act(NOOP)
+        hfo.act (NOOP)
+      # else: 
+        # hfo.act (NOOP)
 
       # Advance the environment and get the game status
       status = hfo.step()
@@ -151,13 +155,25 @@ def main():
       #TODO: get the reward!
       r = 0
       if status == GOAL:
-        r = -1
+        r = -15
+        # distance = ball_tile - robot_tile
+        # delta1 = distance%10 + 1
+        # delta2 = distance/10 + 1
+
+        # r *= min (delta1, delta2)
+
       if status == CAPTURED_BY_DEFENSE or status == OUT_OF_BOUNDS:
-        if next_robot_tile == next_ball_tile:
-          print("Yupp")
-          r = 50
-        else:
-          r = 10
+        r = 10
+
+      if oppHasBall:
+        r = -10
+        
+        delta = state[9]
+        
+        if state [9] < 0:
+          delta = -state[9] + 1
+        r *= (delta/2)
+        
 
       if TRAIN:
         qvals[goalie_tile][robot_tile][ball_tile][a] += ALPHA*(r + (GAMMA*max(qvals[next_goalie_tile][next_robot_tile][next_ball_tile])) - qvals[goalie_tile][robot_tile][ball_tile][a])
