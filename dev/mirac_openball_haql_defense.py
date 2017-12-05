@@ -27,15 +27,15 @@ import math
 import numpy as np
 from operator import add
 
-STATES = 6*100*100
-ACTIONS = 2
+STATES = 6*100*100*2
+ACTIONS = 4
 
-TEAMMATES = 1
-OPPONENTS = 2
+TEAMMATES = 2
+OPPONENTS = 3
 
 EPSILON = 0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.025
 ALPHA = 0.25
-GAMMA = 1
+GAMMA = 1.00
 XI = 0.5
 
 TRAIN = True
@@ -84,7 +84,7 @@ def oppHasBall(state):
   return False
 
 def heuristic(state):
-  return [XI*20, XI*0]
+  return [XI*10, XI*5, XI*2, XI*1]
   
 def main():
   # Create the HFO Environment
@@ -101,12 +101,15 @@ def main():
   #   qvals[i] = random.random()
 
   if TRAIN:
-    qvals = [[[[0 for k in range(ACTIONS)] for j in range(100)] for i in range(100)] for g in range(6)]
+    # qvals = [[[[0 for k in range(ACTIONS)] for j in range(100)] for i in range(100)] for g in range(6)]
+    qvals = [[[[[0 for k in range(ACTIONS)] for o in range(2)] for j in range(100)] for i in range(100)] for g in range (6)]
+
     for g in range(6):
       for i in range(100):
         for j in range(100):
-          for k in range(ACTIONS):
-            qvals[g][i][j][k] = random.random()
+          for o in range (2):
+            for k in range(ACTIONS):
+              qvals[g][i][j][o][k] = random.random()
   else:
     qvals = np.load('q.npy').tolist()
 
@@ -122,6 +125,20 @@ def main():
     ball_tile = getTile(-state[3], state[4])
     goalie_tile = getGoalieTile(state[9+3*TEAMMATES+1])
 
+    radius = 1
+    delta_ball = abs (robot_tile - ball_tile)
+    delta_ball_x = delta_ball / 10
+    delta_ball_y = delta_ball % 10
+
+    open_ball_in = 0
+
+    if max (delta_ball_x, delta_ball_y) <= radius:
+      open_ball_in = 1
+
+    print "robot:", robot_tile
+    print "ball: ", ball_tile
+
+
     while status == IN_GAME:
       #print(state[3])
 
@@ -129,18 +146,26 @@ def main():
         # Pick new action, a', to take with epsilon-greedy strategy
         #print(qvals[goalie_tile][robot_tile][ball_tile])
         if TRAIN:
-          a = map(add, qvals[goalie_tile][robot_tile][ball_tile], heuristic(state)).index(max(map(add, qvals[goalie_tile][robot_tile][ball_tile],heuristic(state))))
+          a = map(add, qvals[goalie_tile][robot_tile][ball_tile][open_ball_in], heuristic(state)).index(max(map(add, qvals[goalie_tile][robot_tile][ball_tile][open_ball_in],heuristic(state))))
           if random.random() < EPSILON:
             a = random.randint(0, ACTIONS-1)
         else:
-          a = qvals[goalie_tile][robot_tile][ball_tile].index(max(qvals[goalie_tile][robot_tile][ball_tile]))
+          a = qvals[goalie_tile][robot_tile][ball_tile][open_ball_in].index(max(qvals[goalie_tile][robot_tile][ball_tile][open_ball_in]))
+          # a = map(add, qvals[goalie_tile][robot_tile][ball_tile][open_ball_in], heuristic(state)).index(max(map(add, qvals[goalie_tile][robot_tile][ball_tile][open_ball_in],heuristic(state))))
       else:
         a = random.randint(0, ACTIONS-1)
 
+
+      # print "action: ", a
+
       if a == 0:
         hfo.act(INTERCEPT)
+      elif a == 1:
+        hfo.act(GO_TO_BALL)
+      elif a == 2:
+        hfo.act (NOOP)
       else:
-        hfo.act(NOOP)
+        hfo.act (DEFEND_GOAL)
 
       # Advance the environment and get the game status
       status = hfo.step()
@@ -152,27 +177,55 @@ def main():
       next_ball_tile = getTile(-state[3], state[4])
       next_goalie_tile = getGoalieTile(state[10+3*TEAMMATES+1])
 
+      new_delta_ball = abs (robot_tile - ball_tile)
+      new_delta_ball_x = delta_ball / 10
+      new_delta_ball_y = delta_ball % 10
+
+      new_open_ball_in = 0
+
+      if max (new_delta_ball_x, new_delta_ball_y) <= radius:
+        new_open_ball_in = 1
+
       # Get reward, update Q-val
 
       #TODO: get the reward!
       r = 0
       if status == GOAL:
-        r = -1
+        r = -15
+        # distance = ball_tile - robot_tile
+        # delta1 = distance%10 + 1
+        # delta2 = distance/10 + 1
+
+        # r *= min (delta1, delta2)
+
       if status == CAPTURED_BY_DEFENSE or status == OUT_OF_BOUNDS:
-        if next_robot_tile == next_ball_tile:
-          print("Yupp")
-          r = 50
-        else:
-          r = 10
+        r = 10
+
+      if oppHasBall:
+        r = -10
+        
+        distance = abs(ball_tile - robot_tile)
+        delta1 = distance%10 + 1
+        delta2 = distance/10 + 1
+
+        r *= (max (delta1, delta2))/10.0
+
+        # delta = state[9]
+        
+        # if state [9] < 0:
+        #   delta = -state[9] + 1
+        # r *= (delta/2)
 
       if TRAIN:
-        qvals[goalie_tile][robot_tile][ball_tile][a] += ALPHA*(r + (GAMMA*max(qvals[next_goalie_tile][next_robot_tile][next_ball_tile])) - qvals[goalie_tile][robot_tile][ball_tile][a])
+        qvals[goalie_tile][robot_tile][ball_tile][open_ball_in][a] += ALPHA*(r + (GAMMA*max(qvals[next_goalie_tile][next_robot_tile][next_ball_tile][new_open_ball_in])) - qvals[goalie_tile][robot_tile][ball_tile][open_ball_in][a])
         
-
 
       robot_tile = next_robot_tile
       ball_tile = next_ball_tile
       goalie_tile = next_goalie_tile
+      open_ball_in = new_open_ball_in
+
+
 
 
       # reward: -5 if enemy has ball, -20 if goal, +15 OOB, CAPTURED_BY_DEFENSE
@@ -199,13 +252,12 @@ def main():
     if TRAIN:
       if episode_num % 5 == 0:
         q = np.array(qvals)
-        np.save('q.npy', q)
+        np.save('q_erdos_queristiclearning_act4_6K_2vs3_defense.npy', q)
+        # np.save('q_erdos_queristiclearning_act4_10K.npy', q)
 
     if status == SERVER_DOWN:
       hfo.act(QUIT)
       exit()
-
-
 
 
 if __name__ == '__main__':

@@ -28,7 +28,7 @@ import numpy as np
 from operator import add
 
 STATES = 6*100*100
-ACTIONS = 2
+ACTIONS = 4
 
 TEAMMATES = 1
 OPPONENTS = 2
@@ -84,7 +84,7 @@ def oppHasBall(state):
   return False
 
 def heuristic(state):
-  return [XI*20, XI*0]
+  return [XI*20, XI*0, XI*0, XI*0]
   
 def main():
   # Create the HFO Environment
@@ -139,8 +139,12 @@ def main():
 
       if a == 0:
         hfo.act(INTERCEPT)
+      elif a == 1:
+        hfo.act(GO_TO_BALL)
+      elif a == 2:
+        hfo.act (DEFEND_GOAL)
       else:
-        hfo.act(NOOP)
+        hfo.act (NOOP)
 
       # Advance the environment and get the game status
       status = hfo.step()
@@ -157,13 +161,24 @@ def main():
       #TODO: get the reward!
       r = 0
       if status == GOAL:
-        r = -1
+        r = -15
+        # distance = ball_tile - robot_tile
+        # delta1 = distance%10 + 1
+        # delta2 = distance/10 + 1
+
+        # r *= min (delta1, delta2)
+
       if status == CAPTURED_BY_DEFENSE or status == OUT_OF_BOUNDS:
-        if next_robot_tile == next_ball_tile:
-          print("Yupp")
-          r = 50
-        else:
-          r = 10
+        r = 10
+
+      if oppHasBall:
+        r = -10
+        
+        delta = state[9]
+        
+        if state [9] < 0:
+          delta = -state[9] + 1
+        r *= (delta/2)
 
       if TRAIN:
         qvals[goalie_tile][robot_tile][ball_tile][a] += ALPHA*(r + (GAMMA*max(qvals[next_goalie_tile][next_robot_tile][next_ball_tile])) - qvals[goalie_tile][robot_tile][ball_tile][a])
@@ -199,13 +214,11 @@ def main():
     if TRAIN:
       if episode_num % 5 == 0:
         q = np.array(qvals)
-        np.save('q.npy', q)
+        np.save('q_erdos_queristiclearning_act4_10K.npy', q)
 
     if status == SERVER_DOWN:
       hfo.act(QUIT)
       exit()
-
-
 
 
 if __name__ == '__main__':
