@@ -38,7 +38,7 @@ ALPHA = 0.25
 GAMMA = 1
 XI = 0.5
 
-TRAIN = False
+TRAIN = True
 RANDOM = False
 
 # Gets tile in range 0-99 from (x,y) position
