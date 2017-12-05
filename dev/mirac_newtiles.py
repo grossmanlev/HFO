@@ -30,8 +30,8 @@ from operator import add
 STATES = 6*25*25*2
 ACTIONS = 4
 
-TEAMMATES = 5
-OPPONENTS = 4
+TEAMMATES = 1
+OPPONENTS = 2
 
 TILE_BASE_NUM = 5
 STATE_NUM =TILE_BASE_NUM * TILE_BASE_NUM
@@ -269,7 +269,4 @@ def main ():
 
 
 if __name__ == '__main__':
-  alphaValue = 
-  gammaValue = 
-
-  main(alphaValue, gammaValue)
+  main()
