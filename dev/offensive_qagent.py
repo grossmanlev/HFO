@@ -37,7 +37,7 @@ TEAMMATES = 1
 OPPONENTS = 2
 
 EPSILON = 0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.025
-ALPHA = 0.6
+ALPHA = 0.5
 GAMMA = 0.975
 
 TRAIN = True
@@ -142,7 +142,7 @@ def main():
   # feature set. See feature sets in hfo.py/hfo.hpp.
   hfo.connectToServer(HIGH_LEVEL_FEATURE_SET,
                       'bin/teams/base/config/formations-dt', 6000,
-                      'localhost', 'base_left', False)
+                      'localhost', 'HELIOS_left', False)
   
   if TRAIN:
     qvals = [[[[[[[0 for a in range(ACTIONS)] for m in range(11)] for l in range(11)] for k in range(2)] for j in range(2)] for i in range(2)] for h in range(2)]
@@ -176,8 +176,6 @@ def main():
 
 
     while status == IN_GAME:
-      #print(state[3])
-
       if a == 0:
         hfo.act(MOVE)
       elif a == 1:
@@ -222,16 +220,16 @@ def main():
       #if t_state[5] > 1 and a != 1: #shoot when decent open angle
       #  r -= 10
 
+      if TRAIN:
+        getQvals(qvals, t_state)[a] += ALPHA*(r + (GAMMA*max(getQvals(qvals, next_t_state))) - getQvals(qvals, t_state)[a])
+
       if not RANDOM:
         # Pick new action, a', to take with epsilon-greedy strategy
         next_a = getAction(qvals, next_t_state, next_state)
       else:
         next_a = random.randint(0, ACTIONS-1)
 
-
-      if TRAIN:
-        getQvals(qvals, t_state)[a] += ALPHA*(r + (GAMMA*max(getQvals(qvals, next_t_state))) - getQvals(qvals, t_state)[a])
-      if SARSA:
+      if TRAIN and SARSA:
         getQvals(qvals, t_state)[a] += ALPHA*(r + (GAMMA*getQvals(qvals, next_t_state)[next_a]) - getQvals(qvals, t_state)[a])
 
 
