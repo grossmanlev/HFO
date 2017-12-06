@@ -37,8 +37,8 @@ TEAMMATES = 1
 OPPONENTS = 2
 
 EPSILON = 0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.025
-ALPHA = 0.5
-GAMMA = 0.95
+ALPHA = 0.6
+GAMMA = 0.975
 
 TRAIN = False
 RANDOM = False
@@ -92,17 +92,47 @@ def offenseHaveBall(state):
 def heuristic(state):
   rtn = [0, 0, 0, 0, 0]
 
-  if state[5] == 1: #has ball
-    rtn[0] -= 10
-    rtn[4] -= 50
-  else: # doesn't have ball
-    rtn[0] += 10
+  #if state[5] == 1: #has ball
+  #  rtn[0] -= 10
+  #  rtn[4] -= 50
+  #else: # doesn't have ball
+  #  rtn[0] += 10
 
-  if state[5] == 1 and state[6] < 0: #ball far from goal
-    rtn[2] += 20
-    rtn[3] += 20
+  if state[6] > 0: #agent far from goal
+    rtn[0] += 10
+    rtn[2] += 5
+    rtn[3] += 25
+
+  #if state[8] > -0.72:
+  #  rtn[1] += 25
+
 
   return rtn
+
+def getAction(qvals, t_state, state):
+  if TRAIN:
+    if random.random() < EPSILON:
+      if t_state[0] == 1:
+        return random.choice([1,2,3])
+      return random.choice([0,4])
+
+    qs = map(add, getQvals(qvals, t_state), heuristic(state))
+  else:
+    qs = getQvals(qvals, t_state)
+
+
+  #print(qs)
+  tmp = qs[:]
+  if t_state[0] == 1: #has ball
+    del tmp[4]
+    del tmp[0]
+  else: #doesn't have ball
+    del tmp[1:4]
+  #print(tmp)
+
+  #print(qs.index(max(tmp)))
+
+  return qs.index(max(tmp))
 
 def main():
   # Create the HFO Environment
@@ -143,10 +173,10 @@ def main():
       if not RANDOM:
         # Pick new action, a', to take with epsilon-greedy strategy
         #print(qvals[goalie_tile][robot_tile][ball_tile])
-        a = map(add, getQvals(qvals, t_state), heuristic(state)).index(max(map(add, getQvals(qvals, t_state), heuristic(state))))
-        
-        if random.random() < EPSILON:
-          a = random.randint(0, ACTIONS-1)
+        a = getAction(qvals, t_state, state)
+         # map(add, getQvals(qvals, t_state), heuristic(state)).index(max(map(add, getQvals(qvals, t_state), heuristic(state))))
+        #if TRAIN and random.random() < EPSILON:
+        #  a = random.randint(0, ACTIONS-1)
       else:
         a = random.randint(0, ACTIONS-1)
 
@@ -160,7 +190,6 @@ def main():
         hfo.act(DRIBBLE)
       else:
         hfo.act(NOOP)
-
 
       # Advance the environment and get the game status
       status = hfo.step()
@@ -177,23 +206,28 @@ def main():
       if status == GOAL:
         r += 50
       if status == OUT_OF_TIME:
-        r += -10
+        r += -25
       if status == CAPTURED_BY_DEFENSE or status == OUT_OF_BOUNDS:
-        r += -10
-      if t_state[0] == -1 and (a == 1 or a == 2 or a == 3): #doesn't have ball and makes illegal move
-        r += -150
-      if t_state[0] == 1 and (a == 0 or a == 4): #has the ball and not doing anything
-        r += -100
-      if not offenseHaveBall(state):
+        r += -25
+      #if t_state[0] == -1 and (a == 1 or a == 2 or a == 3): #doesn't have ball and makes illegal move
+      #  r += -10000
+      #if t_state[0] == 1 and (a == 0 or a == 4): #has the ball and not doing anything
+      #  r += -10000
+      if not offenseHaveBall(state) and a == 4:
         r += -20
       if t_state[4] > 3 and a == 4: # penalize not doing something if far from goal
         r += -25
       if t_state[0] == 1 and t_state[4] > 3 and a == 1: #penalize shooting from far
         r += -25
 
+      # added
+      #if t_state[5] > 1 and a != 1: #shoot when decent open angle
+      #  r -= 10
+
+
       if TRAIN:
         getQvals(qvals, t_state)[a] += ALPHA*(r + (GAMMA*max(getQvals(qvals, next_t_state))) - getQvals(qvals, t_state)[a])
-        
+
       state = next_state
       t_state = next_t_state
 

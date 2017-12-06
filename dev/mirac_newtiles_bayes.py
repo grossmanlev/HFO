@@ -31,8 +31,8 @@ from bayesOpt import BayesianOptimizer
 STATES = 6*25*25*2
 ACTIONS = 4
 
-TEAMMATES = 5
-OPPONENTS = 4
+TEAMMATES = 1
+OPPONENTS = 2
 
 TILE_BASE_NUM = 5
 STATE_NUM =TILE_BASE_NUM * TILE_BASE_NUM
@@ -90,15 +90,8 @@ def oppHasBall(state):
 def heuristic(state):
   return [XI*10, XI*3, XI*2, XI*1]
   
-def main (alpha=0.25, gamma=1.00):
-  # Create the HFO Environment
-  hfo = HFOEnvironment()
-  # Connect to the server with the specified
-  # feature set. See feature sets in hfo.py/hfo.hpp.
-  hfo.connectToServer(HIGH_LEVEL_FEATURE_SET,
-                      'bin/teams/base/config/formations-dt', 6000,
-                      'localhost', 'base_right', False)
-  
+def main (params):
+  (alpha, gamma) = params
   # create qval array with random vals: [0,1)
   # qvals = [0]*(STATES*ACTIONS)
   # for i in range(STATES*ACTIONS):
@@ -120,7 +113,7 @@ def main (alpha=0.25, gamma=1.00):
   nb_goals = 0
 
   episode_num = 0
-  for episode in range(2000):
+  for episode in range(1000):
     episode_num += 1
     status = IN_GAME
 
@@ -261,21 +254,30 @@ def main (alpha=0.25, gamma=1.00):
     if TRAIN:
       if episode_num % 5 == 0:
         q = np.array(qvals)
-        np.save('q_erdos_queristiclearning_5defensevs4offense_act4_2K_heuweights_16_3_2_1.npy', q)
+        np.save('q_erdos_queristiclearning_2defensevs2offense_act4_2K_heuweights_16_3_2_1.npy', q)
         # np.save('q_erdos_queristiclearning_act4_10K.npy', q)
 
     if status == SERVER_DOWN:
       hfo.act(QUIT)
       exit()
 
-  return float(nb_goals)/2000
+  return float(nb_goals)/1000
 
 
 if __name__ == '__main__':
+  # Create the HFO Environment
+  hfo = HFOEnvironment()
+  # Connect to the server with the specified
+  # feature set. See feature sets in hfo.py/hfo.hpp.
+  hfo.connectToServer(HIGH_LEVEL_FEATURE_SET,
+                      'bin/teams/base/config/formations-dt', 6000,
+                      'localhost', 'base_right', False)
+  
+
   bayes = BayesianOptimizer(main, [[0.15,0.5],[0.8,1]])
 
   bestSamples = []
-  for _ in range(10)
+  for _ in range(10):
     bayes.run(1)
     bestSamples.append(bayes.getBestSample())
 
