@@ -40,8 +40,9 @@ EPSILON = 0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.025
 ALPHA = 0.6
 GAMMA = 0.975
 
-TRAIN = False
+TRAIN = True
 RANDOM = False
+SARSA = True
 
 RADIUS = 0.2
 
@@ -167,18 +168,15 @@ def main():
     state = hfo.getState()
     t_state = getTrimmedState(state)
 
+    if not RANDOM:
+      # Pick new action, a', to take with epsilon-greedy strategy
+      a = getAction(qvals, t_state, state)
+    else:
+      a = random.randint(0, ACTIONS-1)
+
+
     while status == IN_GAME:
       #print(state[3])
-
-      if not RANDOM:
-        # Pick new action, a', to take with epsilon-greedy strategy
-        #print(qvals[goalie_tile][robot_tile][ball_tile])
-        a = getAction(qvals, t_state, state)
-         # map(add, getQvals(qvals, t_state), heuristic(state)).index(max(map(add, getQvals(qvals, t_state), heuristic(state))))
-        #if TRAIN and random.random() < EPSILON:
-        #  a = random.randint(0, ACTIONS-1)
-      else:
-        a = random.randint(0, ACTIONS-1)
 
       if a == 0:
         hfo.act(MOVE)
@@ -224,12 +222,23 @@ def main():
       #if t_state[5] > 1 and a != 1: #shoot when decent open angle
       #  r -= 10
 
+      if not RANDOM:
+        # Pick new action, a', to take with epsilon-greedy strategy
+        next_a = getAction(qvals, next_t_state, next_state)
+      else:
+        next_a = random.randint(0, ACTIONS-1)
+
 
       if TRAIN:
         getQvals(qvals, t_state)[a] += ALPHA*(r + (GAMMA*max(getQvals(qvals, next_t_state))) - getQvals(qvals, t_state)[a])
+      if SARSA:
+        getQvals(qvals, t_state)[a] += ALPHA*(r + (GAMMA*getQvals(qvals, next_t_state)[next_a]) - getQvals(qvals, t_state)[a])
+
+
 
       state = next_state
       t_state = next_t_state
+      a = next_a
 
 
     # Check the outcome of the episode
