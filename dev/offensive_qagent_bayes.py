@@ -29,12 +29,17 @@ import math
 import numpy as np
 
 from operator import add
+from bayesOpt import BayesianOptimizer
 
 STATES = 2*2*2*2*11*11
 ACTIONS = 5
 
 TEAMMATES = 1
 OPPONENTS = 2
+
+EPSILON = 0
+ALPHA = 0
+GAMMA = 0
 
 #EPSILON = 0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.025
 #ALPHA = 0.5
@@ -65,7 +70,7 @@ def getTrimmedState(state):
       break
 
   for i in range(OPPONENTS):
-    x, y = (state[9+6*TEAMMATES+3*i+1], state[9+3*TEAMMATES+3*i+2])
+    x, y = (state[9+6*TEAMMATES+3*i+1], state[9+6*TEAMMATES+3*i+2])
     if dist(o_x, o_y, x, y) < RADIUS and state[9+6*TEAMMATES+3*i+3] != 1: #not goalie
       opp_prox = 1
     if state[9+6*TEAMMATES+3*i+3] == 1: #goalie
@@ -90,7 +95,7 @@ def offenseHaveBall(state):
       return True
   return False
 
-def heuristic(state):
+def heuristic(qvals, t_state, state):
   rtn = [0, 0, 0, 0, 0]
 
   #if state[5] == 1: #has ball
@@ -104,8 +109,10 @@ def heuristic(state):
     rtn[2] += 5
     rtn[3] += 25
 
-  #if state[8] > -0.72:
-  #  rtn[1] += 25
+  # HAQL added
+  for i in range(len(rtn)):
+    if rtn[i] != 0:
+      rtn[i] += (max(getQvals(qvals, t_state)) - getQvals(qvals, t_state)[i])
 
 
   return rtn
@@ -117,7 +124,7 @@ def getAction(qvals, t_state, state):
         return random.choice([1,2,3])
       return random.choice([0,4])
 
-    qs = map(add, getQvals(qvals, t_state), heuristic(state))
+    qs = map(add, getQvals(qvals, t_state), heuristic(qvals, t_state, state))
   else:
     qs = getQvals(qvals, t_state)
 
@@ -259,7 +266,7 @@ if __name__ == '__main__':
   # feature set. See feature sets in hfo.py/hfo.hpp.
   hfo.connectToServer(HIGH_LEVEL_FEATURE_SET,
                       'bin/teams/base/config/formations-dt', 6000,
-                      'localhost', 'HELIOS_left', False)
+                      'localhost', 'base_left', False)
 
 
   bayes = BayesianOptimizer(main, [[0.1,0.9],[0.5,1],[0.01,0.10]], maximize=True)

@@ -42,7 +42,7 @@ GAMMA = 0.975
 
 TRAIN = True
 RANDOM = False
-SARSA = False
+SARSA = True
 
 RADIUS = 0.2
 
@@ -65,7 +65,7 @@ def getTrimmedState(state):
       break
 
   for i in range(OPPONENTS):
-    x, y = (state[9+6*TEAMMATES+3*i+1], state[9+3*TEAMMATES+3*i+2])
+    x, y = (state[9+6*TEAMMATES+3*i+1], state[9+6*TEAMMATES+3*i+2])
     if dist(o_x, o_y, x, y) < RADIUS and state[9+6*TEAMMATES+3*i+3] != 1: #not goalie
       opp_prox = 1
     if state[9+6*TEAMMATES+3*i+3] == 1: #goalie
@@ -239,9 +239,9 @@ def main():
     print(('Episode %d ended with %s'%(episode, hfo.statusToString(status))))
     # Quit if the server goes down
 
-    if TRAIN and episode_num % 150 == 0:
+    if TRAIN and episode_num % 500 == 0:
       q = np.array(qvals)
-      np.save(('q_nosarsa_0125_H_offense_iters_' + str(episode_num) + '.npy'), q)
+      np.save(('q_test_' + str(episode_num) + '.npy'), q)
 
     if status == SERVER_DOWN:
       hfo.act(QUIT)
