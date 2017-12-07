@@ -44,6 +44,9 @@ XI = 0.5
 TRAIN = True
 RANDOM = False
 
+def dist(x1, y1, x2, y2):
+  return ((x2-x1)**2 + (y2-y1)**2)**0.5
+
 # Gets tile in range 0-99 from (x,y) position
 def getTile(x, y):
   #print(x, y)

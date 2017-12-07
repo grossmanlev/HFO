@@ -65,7 +65,7 @@ def getTrimmedState(state):
       break
 
   for i in range(OPPONENTS):
-    x, y = (state[9+6*TEAMMATES+3*i+1], state[9+3*TEAMMATES+3*i+2])
+    x, y = (state[9+6*TEAMMATES+3*i+1], state[9+6*TEAMMATES+3*i+2])
     if dist(o_x, o_y, x, y) < RADIUS and state[9+6*TEAMMATES+3*i+3] != 1: #not goalie
       opp_prox = 1
     if state[9+6*TEAMMATES+3*i+3] == 1: #goalie

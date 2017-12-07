@@ -30,8 +30,8 @@ from operator import add
 STATES = 6*25*25*2
 ACTIONS = 4
 
-TEAMMATES = 1
-OPPONENTS = 2
+TEAMMATES = 0
+OPPONENTS = 1
 
 TILE_BASE_NUM = 5
 STATE_NUM =TILE_BASE_NUM * TILE_BASE_NUM
@@ -127,8 +127,10 @@ def main ():
     # state = hfo.getState()
     # TODO add goalie location too?
     state = hfo.getState()
-    robot_tile = getTile(-state[0], state[1])
-    ball_tile = getTile(-state[3], state[4])
+    print "STATES: ", state [0], state [1]
+
+    robot_tile = getTile(state[0], state[1])
+    ball_tile = getTile(state[3], state[4])
     goalie_tile = getGoalieTile(state[9+3*TEAMMATES+1])
 
     radius = 1
@@ -232,7 +234,6 @@ def main ():
       ball_tile = next_ball_tile
       goalie_tile = next_goalie_tile
       open_ball_in = new_open_ball_in
-
 
 
 
