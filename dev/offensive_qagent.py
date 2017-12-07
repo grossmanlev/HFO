@@ -37,12 +37,12 @@ TEAMMATES = 1
 OPPONENTS = 2
 
 EPSILON = 0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.025
-ALPHA = 0.5
+ALPHA = 0.125
 GAMMA = 0.975
 
 TRAIN = True
 RANDOM = False
-SARSA = True
+SARSA = False
 
 RADIUS = 0.2
 
@@ -90,23 +90,18 @@ def offenseHaveBall(state):
       return True
   return False
 
-def heuristic(state):
+def heuristic(qvals, t_state, state):
   rtn = [0, 0, 0, 0, 0]
-
-  #if state[5] == 1: #has ball
-  #  rtn[0] -= 10
-  #  rtn[4] -= 50
-  #else: # doesn't have ball
-  #  rtn[0] += 10
 
   if state[6] > 0: #agent far from goal
     rtn[0] += 10
     rtn[2] += 5
     rtn[3] += 25
 
-  #if state[8] > -0.72:
-  #  rtn[1] += 25
-
+  # HAQL added
+  #for i in range(len(rtn)):
+  #  if rtn[i] != 0:
+  #    rtn[i] += (max(getQvals(qvals, t_state)) - getQvals(qvals, t_state)[i])
 
   return rtn
 
@@ -117,7 +112,7 @@ def getAction(qvals, t_state, state):
         return random.choice([1,2,3])
       return random.choice([0,4])
 
-    qs = map(add, getQvals(qvals, t_state), heuristic(state))
+    qs = map(add, getQvals(qvals, t_state), heuristic(qvals, t_state, state))
   else:
     qs = getQvals(qvals, t_state)
 
@@ -142,7 +137,7 @@ def main():
   # feature set. See feature sets in hfo.py/hfo.hpp.
   hfo.connectToServer(HIGH_LEVEL_FEATURE_SET,
                       'bin/teams/base/config/formations-dt', 6000,
-                      'localhost', 'HELIOS_left', False)
+                      'localhost', 'base_left', False)
   
   if TRAIN:
     qvals = [[[[[[[0 for a in range(ACTIONS)] for m in range(11)] for l in range(11)] for k in range(2)] for j in range(2)] for i in range(2)] for h in range(2)]
@@ -155,7 +150,7 @@ def main():
                 for a in range(ACTIONS):
                   qvals[h][i][j][k][l][m][a] = random.random()
   else:
-    qvals = np.load('q.npy').tolist()
+    qvals = np.load('q_nosarsa_0125_H_offense_iters_150.npy').tolist()
 
   episode_num = 0
   for episode in itertools.count():
@@ -239,19 +234,18 @@ def main():
       a = next_a
 
 
+
     # Check the outcome of the episode
     print(('Episode %d ended with %s'%(episode, hfo.statusToString(status))))
     # Quit if the server goes down
-    if TRAIN:
-      if episode_num % 5 == 0:
-        q = np.array(qvals)
-        np.save('q.npy', q)
+
+    if TRAIN and episode_num % 150 == 0:
+      q = np.array(qvals)
+      np.save(('q_nosarsa_0125_H_offense_iters_' + str(episode_num) + '.npy'), q)
 
     if status == SERVER_DOWN:
       hfo.act(QUIT)
       exit()
-
-
 
 
 if __name__ == '__main__':
