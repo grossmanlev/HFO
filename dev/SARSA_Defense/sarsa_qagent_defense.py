@@ -18,7 +18,7 @@ a:
   - PASS
   - DRIBBLE
   - NOOP
-
+  ./bin/HFO --defense-agents=1 --defense-npcs=1 --offense-team=helios --offense-npcs=2 --no-logging --fullstate --headless --trials=100
 '''
 
 import itertools
@@ -33,19 +33,19 @@ from operator import add
 GOALIE_STATE = 3
 ACTIONS = 4
 
-TEAMMATES = 0
+TEAMMATES = 1
 OPPONENTS = 2
 
 EPSILON = 0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.025
 ALPHA = 0.125
-GAMMA =0.975
+GAMMA =0.95
 XI = 0.5
-INTERCEPT_RADIUS = 0.01
+INTERCEPT_RADIUS = 0.05
 
 TILE_BASE_NUM = 5
 STATE_NUM =TILE_BASE_NUM * TILE_BASE_NUM
 
-TRAIN = True
+TRAIN = False
 RANDOM = False
 SARSA = True
 
@@ -55,7 +55,7 @@ def dist(x1, y1, x2, y2):
   return ((x2-x1)**2 + (y2-y1)**2)**0.5
 
 def heuristic(qvals, t_state, state):
-  rtn = [4, 0, 0, 1]
+  rtn = [1, 1, 1, 1]
 
   ball_x, ball_y = state[3], state[4]
   def_x, def_y = state [0], state[1]
@@ -63,10 +63,10 @@ def heuristic(qvals, t_state, state):
   distance = dist(def_x, def_y, ball_x, ball_y)
 
   if distance <= INTERCEPT_RADIUS:
-    rtn = [10, 2, 0, 0]
+    rtn = [10, 1, 1, 1]
 
-  if distance >= 0.5 and def_x>=0:
-    rtn = [4, 0, 0, 10]
+  if distance >= 0.0 and def_x>=0:
+    rtn = [0, 2, 0, 10]
 
   return rtn
 
@@ -202,7 +202,7 @@ def main():
               # qvals[i][j][gli_tile][tm_pr][op_pr]= 0
 
   else:
-    qvals = np.load('sarsa_defense_RL_heuristic_2300.npy').tolist()
+    qvals = np.load('sarsa_defense_RL_heuristic_1D_1G_vs_2O_2000.npy').tolist()
 
   episode_num = 0
   for episode in itertools.count():
@@ -245,22 +245,22 @@ def main():
       #TODO: get the reward!
       r = 0
       if status == GOAL:
-        r -= 20
+        r -= 15
       if status == OUT_OF_TIME:
         r += 15
       if status == CAPTURED_BY_DEFENSE:
-        r += 20
+        r += 15
       if status == OUT_OF_BOUNDS:
         r += 15
 
-      if oppHasBall:
-        initial_r = -10
+      # if oppHasBall:
+      #   initial_r = -10
         
-        distance = abs(state[1] - state[0])
-        delta1 = distance%TILE_BASE_NUM + 1
-        delta2 = distance/TILE_BASE_NUM + 1
+      #   distance = abs(state[1] - state[0])
+      #   delta1 = distance%TILE_BASE_NUM + 1
+      #   delta2 = distance/TILE_BASE_NUM + 1
 
-        r = initial_r * (max (delta1, delta2))/TILE_BASE_NUM
+      #   r = initial_r * (max (delta1, delta2))/TILE_BASE_NUM
 
 
       if TRAIN:
@@ -280,14 +280,13 @@ def main():
       t_state = next_t_state
       a = next_a
 
-
     # Check the outcome of the episode
     print(('Episode %d ended with %s'%(episode, hfo.statusToString(status))))
     # Quit if the server goes down
 
-    if TRAIN and episode_num % 500 == 0:
+    if TRAIN and episode_num % 200 == 0:
       q = np.array(qvals)
-      np.save(('sarsa_defense_RL_heuristic_TEAMMATES_0_OPPONENTS_2_' + str(episode_num) + '.npy'), q)
+      np.save(('offsarsa_defense_RL_heuristic_1D_1G_vs_2O_' + str(episode_num) + '.npy'), q)
 
     if status == SERVER_DOWN:
       hfo.act(QUIT)
