@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Before running this program, first Start HFO server:
-# $> ./bin/HFO --offense-agents 1
-
 '''
 s: 
   - bool (kickable) (0-1)
@@ -18,7 +15,6 @@ a:
   - PASS
   - DRIBBLE
   - NOOP
-
 '''
 
 import itertools
@@ -36,13 +32,13 @@ ACTIONS = 5
 TEAMMATES = 1
 OPPONENTS = 2
 
-EPSILON = 0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.025
+EPSILON = 0.05
 ALPHA = 0.125
 GAMMA = 0.975
 
-TRAIN = True
-RANDOM = False
-SARSA = True
+TRAIN = False
+RANDOM = True
+SARSA = False
 
 RADIUS = 0.2
 
@@ -99,9 +95,9 @@ def heuristic(qvals, t_state, state):
     rtn[3] += 25
 
   # HAQL added
-  #for i in range(len(rtn)):
-  #  if rtn[i] != 0:
-  #    rtn[i] += (max(getQvals(qvals, t_state)) - getQvals(qvals, t_state)[i])
+  for i in range(len(rtn)):
+    if rtn[i] != 0:
+      rtn[i] += (max(getQvals(qvals, t_state)) - getQvals(qvals, t_state)[i])
 
   return rtn
 
@@ -116,17 +112,12 @@ def getAction(qvals, t_state, state):
   else:
     qs = getQvals(qvals, t_state)
 
-
-  #print(qs)
   tmp = qs[:]
   if t_state[0] == 1: #has ball
     del tmp[4]
     del tmp[0]
   else: #doesn't have ball
     del tmp[1:4]
-  #print(tmp)
-
-  #print(qs.index(max(tmp)))
 
   return qs.index(max(tmp))
 
@@ -150,15 +141,15 @@ def main():
                 for a in range(ACTIONS):
                   qvals[h][i][j][k][l][m][a] = random.random()
   else:
-    qvals = np.load('q_nosarsa_0125_H_offense_iters_150.npy').tolist()
+    qvals = np.load('q_test_1000.npy').tolist()
+    # NPY Files You Can Try:
+    # Q-Learning w/ heuristic: 'offense_tests/TEST_q_offense.npy'
+    # SARSA w/ heuristic: 'offense_tests/TEST_sarsa_offense.npy'
 
   episode_num = 0
   for episode in itertools.count():
     episode_num += 1
     status = IN_GAME
-
-    # state = hfo.getState()
-    # TODO add goalie location too?
 
     state = hfo.getState()
     t_state = getTrimmedState(state)
@@ -191,8 +182,6 @@ def main():
       next_t_state = getTrimmedState(next_state)
 
       # Get reward, update Q-val
-
-      #TODO: get the reward!
       r = 0
       if status == GOAL:
         r += 50
@@ -200,20 +189,12 @@ def main():
         r += -25
       if status == CAPTURED_BY_DEFENSE or status == OUT_OF_BOUNDS:
         r += -25
-      #if t_state[0] == -1 and (a == 1 or a == 2 or a == 3): #doesn't have ball and makes illegal move
-      #  r += -10000
-      #if t_state[0] == 1 and (a == 0 or a == 4): #has the ball and not doing anything
-      #  r += -10000
       if not offenseHaveBall(state) and a == 4:
         r += -20
       if t_state[4] > 3 and a == 4: # penalize not doing something if far from goal
         r += -25
       if t_state[0] == 1 and t_state[4] > 3 and a == 1: #penalize shooting from far
         r += -25
-
-      # added
-      #if t_state[5] > 1 and a != 1: #shoot when decent open angle
-      #  r -= 10
 
       if TRAIN:
         getQvals(qvals, t_state)[a] += ALPHA*(r + (GAMMA*max(getQvals(qvals, next_t_state))) - getQvals(qvals, t_state)[a])
@@ -227,13 +208,9 @@ def main():
       if TRAIN and SARSA:
         getQvals(qvals, t_state)[a] += ALPHA*(r + (GAMMA*getQvals(qvals, next_t_state)[next_a]) - getQvals(qvals, t_state)[a])
 
-
-
       state = next_state
       t_state = next_t_state
       a = next_a
-
-
 
     # Check the outcome of the episode
     print(('Episode %d ended with %s'%(episode, hfo.statusToString(status))))
