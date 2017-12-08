@@ -36,8 +36,8 @@ from operator import add
 GOALIE_STATE = 3
 ACTIONS = 4
 
-TEAMMATES = 1
-OPPONENTS = 2
+TEAMMATES = 0
+OPPONENTS = 1
 
 EPSILON = 0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.025
 ALPHA = 0.125
@@ -48,7 +48,7 @@ INTERCEPT_RADIUS = 0.05
 TILE_BASE_NUM = 5
 STATE_NUM =TILE_BASE_NUM * TILE_BASE_NUM
 
-TRAIN = False
+TRAIN = True
 RANDOM = False
 SARSA = True
 
@@ -58,7 +58,7 @@ def dist(x1, y1, x2, y2):
   return ((x2-x1)**2 + (y2-y1)**2)**0.5
 
 def heuristic(qvals, t_state, state):
-  rtn = [1, 1, 1, 1]
+  rtn = [10, 1, 1, 1]
 
   ball_x, ball_y = state[3], state[4]
   def_x, def_y = state [0], state[1]
@@ -68,7 +68,7 @@ def heuristic(qvals, t_state, state):
   if distance <= INTERCEPT_RADIUS:
     rtn = [10, 1, 1, 1]
 
-  if distance >= 0.0 and def_x>=0:
+  if distance >= 0.5 and def_x>=0:
     rtn = [0, 2, 0, 10]
 
   return rtn
@@ -205,7 +205,7 @@ def main():
               # qvals[i][j][gli_tile][tm_pr][op_pr]= 0
 
   else:
-    qvals = np.load('sarsa_defense_RL_heuristic_1D_1G_vs_2O_2000.npy').tolist()
+    qvals = np.load('national.npy').tolist()
 
   episode_num = 0
   for episode in itertools.count():
@@ -248,7 +248,7 @@ def main():
       #TODO: get the reward!
       r = 0
       if status == GOAL:
-        r -= 15
+        r -= 10
       if status == OUT_OF_TIME:
         r += 15
       if status == CAPTURED_BY_DEFENSE:
@@ -287,9 +287,9 @@ def main():
     print(('Episode %d ended with %s'%(episode, hfo.statusToString(status))))
     # Quit if the server goes down
 
-    if TRAIN and episode_num % 200 == 0:
+    if TRAIN and episode_num % 398 == 0:
       q = np.array(qvals)
-      np.save(('offsarsa_defense_RL_heuristic_1D_1G_vs_2O_' + str(episode_num) + '.npy'), q)
+      np.save(('sarsa_helios_defense_RL_heuristic_1D_1G_vs_1O_' + str(episode_num) + '.npy'), q)
 
     if status == SERVER_DOWN:
       hfo.act(QUIT)
