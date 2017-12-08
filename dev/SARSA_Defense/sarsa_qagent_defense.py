@@ -1,3 +1,6 @@
+## Last Update: 10.48 PM
+## Ready for optimization
+
 #!/usr/bin/env python
 # encoding: utf-8
 
