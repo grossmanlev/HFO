@@ -37,7 +37,7 @@ ALPHA = 0.125
 GAMMA = 0.975
 
 TRAIN = False
-RANDOM = True
+RANDOM = False
 SARSA = False
 
 RADIUS = 0.2
@@ -141,7 +141,7 @@ def main():
                 for a in range(ACTIONS):
                   qvals[h][i][j][k][l][m][a] = random.random()
   else:
-    qvals = np.load('q_test_1000.npy').tolist()
+    qvals = np.load('offense_tests/TEST_sarsa_offense.npy').tolist()
     # NPY Files You Can Try:
     # Q-Learning w/ heuristic: 'offense_tests/TEST_q_offense.npy'
     # SARSA w/ heuristic: 'offense_tests/TEST_sarsa_offense.npy'
