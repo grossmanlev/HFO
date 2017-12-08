@@ -73,8 +73,8 @@ ALPHA = 0.25
 GAMMA = 1.00
 XI = 0.5
 
-TRAIN = False
-RANDOM = True
+TRAIN = True
+RANDOM = False
 
 # Gets tile in range 0-99 from (x,y) position
 def getTile(x, y):
@@ -149,7 +149,7 @@ def main ():
             for k in range(ACTIONS):
               qvals[g][i][j][o][k] = random.random()
   else:
-    qvals = np.load('q_erdos_queristiclearning_5defensevs4offense_act4_2K_heuweights_16_3_2_1.npy').tolist()
+    qvals = np.load('q.npy').tolist()
 
   episode_num = 0
   for episode in itertools.count():
