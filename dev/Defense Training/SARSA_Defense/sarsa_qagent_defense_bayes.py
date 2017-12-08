@@ -32,16 +32,17 @@ import math
 import numpy as np
 
 from operator import add
+from bayesOpt import BayesianOptimizer
 
 GOALIE_STATE = 3
 ACTIONS = 4
 
-TEAMMATES = 0
-OPPONENTS = 1
+TEAMMATES = 1
+OPPONENTS = 2
 
-EPSILON = 0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.025
-ALPHA = 0.125
-GAMMA =0.95
+#EPSILON = 0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.05 #0.025
+#ALPHA = 0.125
+#GAMMA =0.95
 XI = 0.5
 INTERCEPT_RADIUS = 0.05
 
@@ -58,7 +59,7 @@ def dist(x1, y1, x2, y2):
   return ((x2-x1)**2 + (y2-y1)**2)**0.5
 
 def heuristic(qvals, t_state, state):
-  rtn = [10, 1, 1, 1]
+  rtn = [1, 1, 1, 1]
 
   ball_x, ball_y = state[3], state[4]
   def_x, def_y = state [0], state[1]
@@ -68,7 +69,7 @@ def heuristic(qvals, t_state, state):
   if distance <= INTERCEPT_RADIUS:
     rtn = [10, 1, 1, 1]
 
-  if distance >= 0.5 and def_x>=0:
+  if distance >= 0.0 and def_x>=0:
     rtn = [0, 2, 0, 10]
 
   return rtn
@@ -148,7 +149,7 @@ def getQvals(qvals, state):
   return qvals[state[0]][state[1]][state[2]][state[3]][state[4]]
 
 
-def getAction(qvals, t_state, state):
+def getAction(qvals, t_state, state, EPSILON):
   if TRAIN:
     if random.random() < EPSILON:
       return random.randint(0, ACTIONS-1)
@@ -170,16 +171,8 @@ def getAction(qvals, t_state, state):
 
   return qs.index(max(tmp))
 
-def main():
-
-  # Create the HFO Environment
-  hfo = HFOEnvironment()
-
-  # Connect to the server with the specified
-  # feature set. See feature sets in hfo.py/hfo.hpp.
-  hfo.connectToServer(HIGH_LEVEL_FEATURE_SET,
-                      'bin/teams/base/config/formations-dt', 6000,
-                      'localhost', 'base_right', False)
+def main(params):
+  (ALPHA, GAMMA, EPSILON) = params
   
   if TRAIN:
     # qvals = [[[[[[[0 for a in range(ACTIONS)] for m in range(11)] for l in range(11)] for k in range(2)] for j in range(2)] for i in range(2)] for h in range(2)]
@@ -205,10 +198,13 @@ def main():
               # qvals[i][j][gli_tile][tm_pr][op_pr]= 0
 
   else:
-    qvals = np.load('national.npy').tolist()
+    qvals = np.load('sarsa_defense_RL_heuristic_1D_1G_vs_2O_2000.npy').tolist()
+
+  nb_goals = 0
 
   episode_num = 0
-  for episode in itertools.count():
+  tot_episodes = 1050
+  for episode in range(tot_episodes):
     episode_num += 1
     status = IN_GAME
 
@@ -220,7 +216,7 @@ def main():
 
     if not RANDOM:
       # Pick new action, a', to take with epsilon-greedy strategy
-      a = getAction(qvals, t_state, state)
+      a = getAction(qvals, t_state, state, EPSILON)
     else:
       a = random.randint(0, ACTIONS-1)
 
@@ -248,7 +244,7 @@ def main():
       #TODO: get the reward!
       r = 0
       if status == GOAL:
-        r -= 10
+        r -= 15
       if status == OUT_OF_TIME:
         r += 15
       if status == CAPTURED_BY_DEFENSE:
@@ -271,7 +267,7 @@ def main():
 
       if not RANDOM:
         # Pick new action, a', to take with epsilon-greedy strategy
-        next_a = getAction(qvals, next_t_state, next_state)
+        next_a = getAction(qvals, next_t_state, next_state, EPSILON)
       else:
         next_a = random.randint(0, ACTIONS-1)
 
@@ -287,14 +283,39 @@ def main():
     print(('Episode %d ended with %s'%(episode, hfo.statusToString(status))))
     # Quit if the server goes down
 
-    if TRAIN and episode_num % 398 == 0:
+    if TRAIN and episode_num % 200 == 0:
       q = np.array(qvals)
-      np.save(('sarsa_helios_defense_RL_heuristic_1D_1G_vs_1O_' + str(episode_num) + '.npy'), q)
+      np.save(('sarsa_defense_RL_heuristic_1D_1G_vs_2O_' + str(episode_num) + '_bayesopt_' + str(ALPHA) + '.npy'), q)
 
     if status == SERVER_DOWN:
       hfo.act(QUIT)
       exit()
 
+  return float(nb_goals)/tot_episodes
+
 
 if __name__ == '__main__':
-  main()
+  # Create the HFO Environment
+  hfo = HFOEnvironment()
+
+  # Connect to the server with the specified
+  # feature set. See feature sets in hfo.py/hfo.hpp.
+  hfo.connectToServer(HIGH_LEVEL_FEATURE_SET,
+                      'bin/teams/base/config/formations-dt', 6000,
+                      'localhost', 'base_right', False)
+
+  bayes = BayesianOptimizer(main, [[0.1,0.9],[0.5,1],[0.01,0.10]])
+
+  with open("defense_bayes_opt_results.txt","w") as f:
+
+    f.write("Best Samples:\n")
+    for _ in range(50):
+      bayes.run(1)
+      sample = bayes.getBestSample()
+      f.write("params: {},\toutput: {}\n".format(sample[0], sample[1]))
+
+    data = bayes.getData()
+
+    f.write("\n\nAll Samples:\n")
+    for i in range(len(data[0])):
+      f.write("params: {},\toutput: {}\n".format(data[0][i], data[1][i]))
