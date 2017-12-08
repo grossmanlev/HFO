@@ -267,7 +267,7 @@ def main(params):
 
       if not RANDOM:
         # Pick new action, a', to take with epsilon-greedy strategy
-        next_a = getAction(qvals, next_t_state, next_state)
+        next_a = getAction(qvals, next_t_state, next_state, EPSILON)
       else:
         next_a = random.randint(0, ACTIONS-1)
 
@@ -285,7 +285,7 @@ def main(params):
 
     if TRAIN and episode_num % 200 == 0:
       q = np.array(qvals)
-      np.save(('offsarsa_defense_RL_heuristic_1D_1G_vs_2O_' + str(episode_num) + '_bayesopt_' + str(ALPHA) + '.npy'), q)
+      np.save(('sarsa_defense_RL_heuristic_1D_1G_vs_2O_' + str(episode_num) + '_bayesopt_' + str(ALPHA) + '.npy'), q)
 
     if status == SERVER_DOWN:
       hfo.act(QUIT)
