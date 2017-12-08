@@ -244,6 +244,7 @@ def main(params):
       #TODO: get the reward!
       r = 0
       if status == GOAL:
+        nb_goals += 1
         r -= 15
       if status == OUT_OF_TIME:
         r += 15
